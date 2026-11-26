@@ -1,0 +1,55 @@
+# XcodeGen 工程描述：云端（GitHub 的 Mac 机器）上 `xcodegen generate` 生成 MIAOWRemote.xcodeproj 再编译。
+# 这台 Windows 电脑上不用、也编不了。
+name: MIAOWRemote
+options:
+  bundleIdPrefix: com.miaow
+  deploymentTarget:
+    iOS: "16.0"
+  createIntermediateGroups: true
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: ""
+targets:
+  MIAOWRemote:
+    type: application
+    platform: iOS
+    scheme: {}
+    sources:
+      - path: MIAOWRemote
+    info:
+      path: MIAOWRemote/Info.plist
+      properties:
+        CFBundleDisplayName: MIAOW
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UISupportedInterfaceOrientations~ipad:
+          - UIInterfaceOrientationPortrait
+          - UIInterfaceOrientationPortraitUpsideDown
+          - UIInterfaceOrientationLandscapeLeft
+          - UIInterfaceOrientationLandscapeRight
+        UIUserInterfaceStyle: Dark
+        # iOS 14 起连局域网里的设备要先问用户
+        NSLocalNetworkUsageDescription: 要连接家里 Wi-Fi 上的 MIAOW 播放器（那台电脑）来点歌和管理曲库。
+        NSPhotoLibraryUsageDescription: 从相册里选一张图换专辑封面。
+        # 播放器在局域网里，用的是 http（不是 https）
+        NSAppTransportSecurity:
+          NSAllowsArbitraryLoads: true
+        ITSAppUsesNonExemptEncryption: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.miaow.remote
+        PRODUCT_NAME: MIAOW
+        TARGETED_DEVICE_FAMILY: "1,2"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        CODE_SIGN_STYLE: Automatic
+        ENABLE_PREVIEWS: YES

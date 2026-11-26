@@ -1,0 +1,6 @@
+MIAOWRemote.xcodeproj/
+build/
+out/
+shots/
+*.xcuserstate
+.DS_Store

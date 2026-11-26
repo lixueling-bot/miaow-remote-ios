@@ -1,0 +1,66 @@
+# 云端编译：每次推上来就在 GitHub 的 Mac 机器上
+#   1. 用 XcodeGen 生成工程，编译给模拟器（查编译错误）
+#   2. 起一个假播放器（mock/mock_server.py），在 iPhone 和 iPad 模拟器上打开 App 截图
+#   3. 编一个没签名的 .ipa（用 Sideloadly / AltStore 拿自己的 Apple ID 签了装到手机）
+# 截图和 .ipa 在这次运行页面最下面的 Artifacts 里。
+name: iOS
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-15
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: 生成 Xcode 工程
+        run: |
+          brew install xcodegen
+          xcodegen generate
+          xcodebuild -version
+
+      - name: 编译（模拟器）
+        run: |
+          set -o pipefail
+          xcodebuild -project MIAOWRemote.xcodeproj -scheme MIAOWRemote -configuration Debug \
+            -sdk iphonesimulator -destination 'generic/platform=iOS Simulator' \
+            -derivedDataPath build/sim CODE_SIGNING_ALLOWED=NO build 2>&1 | tee build/sim.log | grep -E "error:|warning: .*MIAOWRemote/|BUILD" || true
+          test -d build/sim/Build/Products/Debug-iphonesimulator/MIAOW.app
+
+      - name: 模拟器截图（连假播放器）
+        run: |
+          python3 mock/mock_server.py 8099 > build/mock.log 2>&1 &
+          sleep 2
+          bash tools/screenshots.sh build/sim/Build/Products/Debug-iphonesimulator/MIAOW.app shots
+
+      - name: 编没签名的 ipa（真机用）
+        run: |
+          set -o pipefail
+          xcodebuild -project MIAOWRemote.xcodeproj -scheme MIAOWRemote -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build/dev \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO CODE_SIGN_IDENTITY="" build 2>&1 | tee build/dev.log | grep -E "error:|BUILD" || true
+          mkdir -p out/Payload
+          cp -R build/dev/Build/Products/Release-iphoneos/MIAOW.app out/Payload/
+          (cd out && zip -qry MIAOW-unsigned.ipa Payload && ls -la MIAOW-unsigned.ipa)
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: screenshots
+          path: shots/
+          if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: logs
+          path: build/*.log
+          if-no-files-found: ignore
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: MIAOW-unsigned-ipa
+          path: out/MIAOW-unsigned.ipa
