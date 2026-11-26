@@ -78,7 +78,7 @@ struct NowPlayingView: View {
                         }
                     }
                     .padding(24)
-                    .frame(minHeight: geo.size.height)
+                    .frame(maxWidth: .infinity, minHeight: geo.size.height)
                 }
             }
             .navigationBarTitleDisplayMode(.inline)
