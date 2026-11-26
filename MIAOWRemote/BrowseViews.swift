@@ -183,7 +183,7 @@ struct SlotRow: View {
                 .frame(width: 30, height: 30)
                 .background(Circle().strokeBorder(slot.current == true ? Theme.accent : Color(white: 0.3), lineWidth: 1.5))
             VStack(alignment: .leading, spacing: 3) {
-                Text(slot.track?.name ?? slot.title ?? "卡位 \(slot.n)").lineLimit(2).foregroundStyle(slot.track == nil && slot.title == nil ? .secondary : .primary)
+                Text(slot.track?.name ?? slot.title ?? "卡位 \(slot.n)").lineLimit(2).foregroundStyle(slot.track == nil && slot.title == nil ? Color.secondary : Color.primary)
                 HStack(spacing: 8) {
                     Text(stateText).foregroundStyle(stateColor)
                     if let p = slot.routedTo, p == "A" || p == "B" { Text("接 \(p) 口") }
