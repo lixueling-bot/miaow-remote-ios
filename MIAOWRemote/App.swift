@@ -68,7 +68,7 @@ struct PlayerBarModifier: ViewModifier {
             .safeAreaInset(edge: .bottom, spacing: 0) {
                 MiniPlayer { showNowPlaying = true }
             }
-            .sheet(isPresented: $showNowPlaying) {
+            .fullScreenCover(isPresented: $showNowPlaying) {
                 NowPlayingView().environmentObject(store)
             }
     }

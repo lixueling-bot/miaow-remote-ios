@@ -77,7 +77,7 @@ def player_state():
     nxt = track(a, state["index"] + 1) if state["index"] + 1 < a[4] else None
     return {
         "rev": rev, "output": "cart", "state": "playing" if state["playing"] else "paused", "preparing": False,
-        "position_s": round(min(pos, cur["duration_s"]), 1), "duration_s": cur["duration_s"], "can_seek": False,
+        "position_s": round(pos % cur["duration_s"], 1), "duration_s": cur["duration_s"], "can_seek": False,
         "track": cur, "pending": None, "next_pick": nxt,
         "next_text": ("下一首：" + nxt["title"] + "（已预载）") if nxt else None,
         "queued_album": album_dict(find(state["queued"])) if state["queued"] else None,

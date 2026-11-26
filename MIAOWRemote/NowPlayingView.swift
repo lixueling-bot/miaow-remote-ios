@@ -70,7 +70,8 @@ struct NowPlayingView: View {
                             }
                         } else {
                             VStack(spacing: 24) {
-                                CoverView(album: t?.albumId, rev: t?.cover, size: 1000, corner: 10).frame(maxWidth: 520)
+                                CoverView(album: t?.albumId, rev: t?.cover, size: 1000, corner: 10)
+                                    .frame(maxWidth: min(520, max(geo.size.height * 0.45, 200)))
                                     .shadow(color: .black.opacity(0.5), radius: 18, y: 8)
                                 controls(s).frame(maxWidth: 520)
                             }

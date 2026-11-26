@@ -11,6 +11,7 @@ struct AlbumDetailView: View {
     @State private var showIdentify = UserDefaults.standard.bool(forKey: "shotIdentify")   // 截图自检用
     @State private var photo: PhotosPickerItem?
     @State private var uploading = false
+    @State private var showArtist = false
 
     var body: some View {
         Group {
@@ -31,6 +32,7 @@ struct AlbumDetailView: View {
         .sheet(isPresented: $showIdentify) {
             if let a = album { NavigationStack { CandidatesView(albumId: a.id) { album = $0 } }.environmentObject(store) }
         }
+        .navigationDestination(isPresented: $showArtist) { ArtistDetailView(name: album?.artist ?? "") }
         .onChange(of: photo) { item in
             guard let item = item else { return }
             Task { await upload(item) }
@@ -84,28 +86,33 @@ struct AlbumDetailView: View {
             VStack(spacing: 4) {
                 Text(a.name).font(.title3.weight(.semibold)).multilineTextAlignment(.center)
                 if let ar = a.artist, !ar.isEmpty {
-                    NavigationLink(value: ArtistRoute(name: ar)) { Text(ar).foregroundStyle(Theme.accent) }
+                    Button { showArtist = true } label: { Text(ar).foregroundStyle(Theme.accent) }.buttonStyle(.borderless)
                 }
                 Text([a.year, a.label, a.genre].compactMap { $0 }.filter { !$0.isEmpty }.joined(separator: " · "))
                     .font(.caption).foregroundStyle(.secondary)
                 if let s = a.idState, s != "matched" {
                     Button { showIdentify = true } label: {
-                        Label(s == "candidates" ? "有 \(a.candidates ?? 0) 个识别候选待确认" : s == "unknown" ? "没认出来，手动找" : "还没识别",
-                              systemImage: "questionmark.circle")
-                            .font(.caption)
+                        HStack(spacing: 4) {
+                            Image(systemName: "questionmark.circle")
+                            Text(s == "candidates" ? "有 \(a.candidates ?? 0) 个识别候选待确认" : s == "unknown" ? "没认出来，手动找" : "还没识别")
+                        }
+                        .font(.caption)
                     }
                     .padding(.top, 2)
                 }
             }
             HStack(spacing: 12) {
                 Button { Task { await store.playAlbum(a.id) } } label: {
-                    Label("播放", systemImage: "play.fill").frame(minWidth: 110).padding(.vertical, 4)
+                    HStack(spacing: 6) { Image(systemName: "play.fill"); Text("播放") }.frame(minWidth: 110).padding(.vertical, 4)
                 }
                 .buttonStyle(.borderedProminent)
                 if playingOther {
                     Button { Task { await store.queueAlbum(a.id, on: a.queued != true); await load() } } label: {
-                        Label(a.queued == true ? "已排好" : "接着放这张", systemImage: a.queued == true ? "checkmark" : "text.append")
-                            .padding(.vertical, 4)
+                        HStack(spacing: 6) {
+                            Image(systemName: a.queued == true ? "checkmark" : "text.append")
+                            Text(a.queued == true ? "已排好" : "接着放这张")
+                        }
+                        .padding(.vertical, 4)
                     }
                     .buttonStyle(.bordered)
                 }
@@ -216,7 +223,7 @@ struct LoadBadge: View {
     var body: some View {
         switch load.state ?? "" {
         case "ready":
-            Label("在卡里", systemImage: "checkmark.circle.fill").font(.caption2).foregroundStyle(Theme.ready)
+            HStack(spacing: 3) { Image(systemName: "checkmark.circle.fill"); Text("在卡里") }.font(.caption2).foregroundStyle(Theme.ready)
         case "writing":
             HStack(spacing: 6) {
                 ProgressView(value: Double(load.pct ?? 0), total: 100).frame(width: 60).tint(Theme.accent)
