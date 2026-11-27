@@ -2,7 +2,8 @@
 #   1. 用 XcodeGen 生成工程，编译给模拟器（查编译错误）
 #   2. 起一个假播放器（mock/mock_server.py），在 iPhone 和 iPad 模拟器上打开 App 截图
 #   3. 编一个没签名的 .ipa（用 Sideloadly / AltStore 拿自己的 Apple ID 签了装到手机）
-# 截图和 .ipa 在这次运行页面最下面的 Artifacts 里。
+#   4. 仓库 Secrets 里放了开发者账号的 API 密钥时：签名并传到 TestFlight（main 分支才传；没放密钥就跳过）
+# 截图和 .ipa 在这次运行页面最下面的 Artifacts 里。怎么放密钥见 开发者账号和TestFlight.md。
 name: iOS
 
 on:
@@ -64,3 +65,72 @@ jobs:
         with:
           name: MIAOW-unsigned-ipa
           path: out/MIAOW-unsigned.ipa
+
+  testflight:
+    needs: build
+    if: github.ref == 'refs/heads/main'
+    runs-on: macos-15
+    timeout-minutes: 45
+    env:
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+      BUNDLE_ID: ${{ vars.BUNDLE_ID || 'com.miaow.remote' }}
+    steps:
+      - name: 有没有放密钥
+        id: keys
+        run: |
+          if [ -n "$ASC_KEY_ID" ] && [ -n "$ASC_ISSUER_ID" ] && [ -n "$ASC_KEY_P8" ] && [ -n "$APPLE_TEAM_ID" ]; then
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "仓库 Secrets 里还没放齐 ASC_KEY_ID / ASC_ISSUER_ID / ASC_KEY_P8 / APPLE_TEAM_ID，跳过 TestFlight"
+          fi
+
+      - uses: actions/checkout@v4
+        if: steps.keys.outputs.ok == 'true'
+
+      - name: 生成 Xcode 工程、写密钥文件
+        if: steps.keys.outputs.ok == 'true'
+        run: |
+          brew install xcodegen
+          xcodegen generate
+          mkdir -p "$RUNNER_TEMP/asc"
+          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/asc/AuthKey_$ASC_KEY_ID.p8"
+          sed -i '' "s/TEAM_ID/$APPLE_TEAM_ID/" tools/ExportOptions.plist
+
+      # 先编一个不签名的归档（没有登记过的测试机也能编），导出时再用苹果云端管的发布证书签名、直接上传
+      - name: 归档
+        if: steps.keys.outputs.ok == 'true'
+        run: |
+          set -o pipefail
+          mkdir -p build
+          xcodebuild -project MIAOWRemote.xcodeproj -scheme MIAOWRemote -configuration Release \
+            -destination 'generic/platform=iOS' -archivePath build/MIAOW.xcarchive \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" PRODUCT_BUNDLE_IDENTIFIER="$BUNDLE_ID" \
+            CURRENT_PROJECT_VERSION="${{ github.run_number }}" \
+            CODE_SIGNING_ALLOWED=NO archive 2>&1 | tee build/archive.log | grep -E "error:|ARCHIVE" || true
+          test -d build/MIAOW.xcarchive
+
+      - name: 签名并传到 TestFlight
+        if: steps.keys.outputs.ok == 'true'
+        run: |
+          set -o pipefail
+          xcodebuild -exportArchive -archivePath build/MIAOW.xcarchive \
+            -exportOptionsPlist tools/ExportOptions.plist -exportPath build/export \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$RUNNER_TEMP/asc/AuthKey_$ASC_KEY_ID.p8" \
+            -authenticationKeyID "$ASC_KEY_ID" -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            2>&1 | tee build/upload.log
+          echo "已上传：版本 0.1.0，编号 ${{ github.run_number }}。苹果处理完（一般 5~30 分钟）手机上的 TestFlight 会出现"
+
+      - name: 删掉密钥文件
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/asc"
+
+      - uses: actions/upload-artifact@v4
+        if: always() && steps.keys.outputs.ok == 'true'
+        with:
+          name: testflight-logs
+          path: build/*.log
+          if-no-files-found: ignore

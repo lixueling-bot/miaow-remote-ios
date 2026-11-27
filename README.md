@@ -20,7 +20,7 @@
 ## 装到手机
 
 - **不花钱**：Windows 上装 Sideloadly（或 AltStore），用你自己的 Apple ID 给 `MIAOW-unsigned.ipa` 签名、通过数据线装上。iPhone 上要打开“开发者模式”，并在 设置 → 通用 → VPN 与设备管理 里信任。免费签名 7 天过期，过期要重签一次。
-- **花 99 美元 / 年**（苹果开发者账号）：可以走 TestFlight，装一次能用 90 天、自动更新。要你自己注册账号，再把证书放进 GitHub 的仓库密钥，流程另加。
+- **花 99 美元 / 年**（苹果开发者账号）：走 TestFlight，装一次能用 90 天、有新版自动提示。仓库 Secrets 里放了 API 密钥后，云端编译会自动签名、上传（`testflight` 那一段；没放密钥就跳过）。怎么注册、建密钥、放密钥见 `开发者账号和TestFlight.md`。
 
 ## 文件
 
@@ -31,3 +31,4 @@
 | `mock/mock_server.py` | 假播放器，云端截图用 |
 | `tools/screenshots.sh` | 模拟器截图 |
 | `tools/make_icon.ps1` | 画 App 图标（Windows 上跑） |
+| `tools/ExportOptions.plist` | 传 TestFlight 的导出设置 |

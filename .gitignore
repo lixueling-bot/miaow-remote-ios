@@ -4,3 +4,6 @@ out/
 shots/
 *.xcuserstate
 .DS_Store
+# App Store Connect 的 API 密钥，只放 GitHub Secrets，绝不进仓库
+*.p8
+AuthKey_*
