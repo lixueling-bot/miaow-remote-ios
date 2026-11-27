@@ -9,7 +9,7 @@ options:
 settings:
   base:
     SWIFT_VERSION: "5.0"
-    MARKETING_VERSION: "0.1.0"
+    MARKETING_VERSION: "0.2.0"
     CURRENT_PROJECT_VERSION: "1"
     DEVELOPMENT_TEAM: ""
 targets:
@@ -41,9 +41,10 @@ targets:
         # iOS 14 起连局域网里的设备要先问用户
         NSLocalNetworkUsageDescription: 要连接家里 Wi-Fi 上的 MIAOW 播放器（那台电脑）来点歌和管理曲库。
         NSPhotoLibraryUsageDescription: 从相册里选一张图换专辑封面。
-        # 播放器在局域网里，用的是 http（不是 https）
+        # 播放器在局域网里，用的是 http（不是 https）。只放开局域网（IP 地址、.local 电脑名），
+        # 不放开任意 http：上 TestFlight / 审核时不用另外解释
         NSAppTransportSecurity:
-          NSAllowsArbitraryLoads: true
+          NSAllowsLocalNetworking: true
         ITSAppUsesNonExemptEncryption: false
     settings:
       base:
