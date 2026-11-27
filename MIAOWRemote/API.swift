@@ -96,7 +96,7 @@ final class API {
         return data
     }
 
-    private func send<T: Decodable>(_ req: URLRequest) async throws -> T {
+    private func send<T: Decodable>(_ req: URLRequest, retry: Bool = true) async throws -> T {
         let data: Data, resp: URLResponse
         do { (data, resp) = try await session.data(for: req) }
         catch let e as URLError {
@@ -108,6 +108,11 @@ final class API {
             }
         }
         let code = (resp as? HTTPURLResponse)?.statusCode ?? 0
+        // 503 = 电脑上的界面这一下腾不出手（几秒内会好）：读的请求等一下自动再问一次
+        if code == 503, retry, req.httpMethod ?? "GET" == "GET" {
+            try? await Task.sleep(nanoseconds: 1_200_000_000)
+            return try await send(req, retry: false)
+        }
         if code != 200 {
             if let e = try? JSONDecoder().decode(ErrorBody.self, from: data), let m = e.error { throw APIError(message: m) }
             throw APIError(message: "播放器回了 HTTP \(code)")
